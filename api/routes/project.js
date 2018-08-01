@@ -28,6 +28,11 @@ router.get('/projects/:id', async (req, res) => {
             if (task.deadline && task.state === 'active') {
               let deadline = new Date(task.deadline)
               if (deadline.getTime() < today.getTime()) {
+                let activity = {
+                  content: `Task ${task.title} is missed`,
+                  time: new Date()
+                }
+                await project.addActivity(activity)
                 task.state = 'missed'
               }
             }
@@ -66,7 +71,11 @@ router.post('/projects', async (req, res) => {
     let project = new Project({
       title: req.body.title,
       owner: res.locals.user,
-      members: [res.locals.user]
+      members: [res.locals.user],
+      activites: [{
+        content: 'Project has been created',
+        time: new Date()
+      }]
     })
     await project.save()
     res.status(200).send({id: project._id})
@@ -100,13 +109,13 @@ router.delete('/projects/:id/members', async (req, res) => {
       if (!project) return res.status(422).send({message: 'Project not found'})
       if (res.locals.user.username !== project.owner.username) return res.status(403).end()
       if (req.body.username === res.locals.user.username) return res.status(422).send({message: 'Project owner can not be removed'})
-      let removed = await project.removeMember(req.body.username)
+      let removed = await project.removeMember(req.body.username, 'has been removed')
       if (!removed) return res.status(422).send({message: 'User is not a member'})
       res.status(200).end()
     } else {
       let project = await Project.findOne({_id: req.params.id}).populate('members')
       if (!project) return res.status(422).send({message: 'Project not found'})
-      let removed = await project.removeMember(res.locals.user.username)
+      let removed = await project.removeMember(res.locals.user.username, 'left')
       if (!removed) return res.status(422).send({message: 'Not a member'})
       res.status(200).end()
     }
