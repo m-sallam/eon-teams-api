@@ -19,13 +19,13 @@ router.get('/projects', async (req, res) => {
 
 router.get('/projects/:id', async (req, res) => {
   try {
-    let project = await Project.findOne({_id: req.params.id}).populate('owner', '-hash').populate('members', '-hash')
+    let project = await Project.findOne({_id: req.params.id}).populate('owner', '-hash').populate('members', '-hash').populate('lists.tasks.users', '-hash')
     if (project) {
       if (res.locals.user.username === project.owner.username || project.members.find(u => u.username === res.locals.user.username)) {
         let today = new Date()
         for (let list of project.lists) {
           for (let task of list.tasks) {
-            if (task.deadline) {
+            if (task.deadline && task.state === 'active') {
               let deadline = new Date(task.deadline)
               if (deadline.getTime() < today.getTime()) {
                 task.state = 'missed'
@@ -99,6 +99,7 @@ router.delete('/projects/:id/members', async (req, res) => {
       let project = await Project.findOne({_id: req.params.id}).populate('members').populate('owner')
       if (!project) return res.status(422).send({message: 'Project not found'})
       if (res.locals.user.username !== project.owner.username) return res.status(403).end()
+      if (req.body.username === res.locals.user.username) return res.status(422).send({message: 'Project owner can not be removed'})
       let removed = await project.removeMember(req.body.username)
       if (!removed) return res.status(422).send({message: 'User is not a member'})
       res.status(200).end()
