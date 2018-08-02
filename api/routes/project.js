@@ -1,6 +1,7 @@
 const router = require('express').Router()
 const Project = require('../models/project')
 const User = require('../models/user')
+const Chat = require('../models/chat')
 const mongoose = require('mongoose')
 const crypto = require('crypto')
 const save = require('save-file')
@@ -231,6 +232,16 @@ router.post('/projects/:id/lists/:listId/tasks/:taskId/mark', async (req, res) =
     let marked = await project.markTask(req.params.listId, req.body.task)
     if (!marked) return res.status(422).send({message: 'Task not found'})
     res.status(200).end()
+  } catch (err) {
+    console.log(err)
+    res.status(500).send(err.message)
+  }
+})
+
+router.get('/projects/:id/chat', async (req, res) => {
+  try {
+    let chat = await Chat.find({project: req.params.id}).populate('user', '-hash')
+    res.status(200).send({chat})
   } catch (err) {
     console.log(err)
     res.status(500).send(err.message)

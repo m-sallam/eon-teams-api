@@ -6,8 +6,9 @@ const fileUpload = require('express-fileupload')
 const cors = require('cors')
 const path = require('path')
 const auth = require('./middleware/auth')
-
 const app = express()
+const server = require('http').Server(app)
+const io = require('socket.io')(server)
 
 require('dotenv').config()
 
@@ -41,7 +42,7 @@ var start = async () => {
   try {
     await mongoose.connect(process.env.DBURL, { useNewUrlParser: true })
     console.log('connect to database')
-    await app.listen(process.env.PORT || 3000)
+    await server.listen(process.env.PORT || 3000)
     console.log(`listening on port ${process.env.PORT || 3000} ...`)
   } catch (err) {
     console.log(err)
@@ -50,3 +51,7 @@ var start = async () => {
 }
 
 start()
+
+module.exports = {io}
+
+require('./socket')
